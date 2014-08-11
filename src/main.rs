@@ -1,7 +1,7 @@
 extern crate getopts;
 use getopts::{optopt, optflag, getopts, OptGroup};
 use std::str;
-use std::io::{TcpListener, Acceptor, Listener};
+use std::io::{TcpListener, Acceptor, Listener, stdio};
 use std::os;
 
 fn print_usage(program: &str, opts: &[OptGroup]) {
@@ -9,6 +9,30 @@ fn print_usage(program: &str, opts: &[OptGroup]) {
     for &o in opts.iter() {
         //should print to string first in case option has no name?
         println!("-{} --{}\t{}", o.short_name, o.long_name, o.desc);
+    }
+}
+
+// there's probably a better way to do this...
+fn try_bind(host: &str, port: u16) -> Result<TcpListener, &str> {
+    println!("trying to bind to {}:{}", host, port);
+    match TcpListener::bind("127.0.0.1", port) {
+        Err(e) => {
+            println!("Error: {}", e);
+            let mut input = stdio::stdin();
+            print!("Would you like to try another port? (y/n): ");
+            let resp = input.read_char().unwrap();
+            if resp == 'Y' || resp == 'y' {
+                // my god do you know how long it took me to fix getting input :'(
+                let _ = input.read_line(); //consume CR
+                print!("Enter new port: ");
+                let tmp = input.read_line().unwrap(); //grr, fix this already mozilla people
+                let tmp2 = tmp.as_slice().trim_right_chars('\n'); 
+                let p : u16 = from_str(tmp2).unwrap();
+                try_bind(host, p)
+            }
+            else { Err("Unable to bind to port") }
+        }
+        Ok(b) => {print!("listening!\n\n"); Ok(b)}
     }
 }
 
@@ -22,12 +46,13 @@ fn main() {
         print_usage(program.as_slice(), opts);
         return;
     }
-    let port : u16= match matches.opt_str("p") {
+
+    let port : u16 = match matches.opt_str("p") {
         None => 60002,
         Some(p) => from_str(p.as_slice()).unwrap()
     };
 
-    let mut acceptor = TcpListener::bind("127.0.0.1", port).listen();
+    let mut acceptor = try_bind("127.0.0.1", port).unwrap().listen();
     for stream in acceptor.incoming() {
         let mut in_stream = stream.unwrap();
         let mut out_stream = in_stream.clone();
