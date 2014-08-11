@@ -1,0 +1,9 @@
+[package]
+
+name = "echo_server"
+version = "0.1.0"
+authors = [ "Vincent Huang <vincom2@gmail.com>" ]
+
+[[bin]]
+
+name = "echo_server"
