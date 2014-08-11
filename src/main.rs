@@ -1,12 +1,13 @@
 extern crate getopts;
 
 use bind::try_bind;
+use echo::echo;
 use getopts::{optopt, optflag, getopts, OptGroup};
-use std::str;
 use std::io::{Acceptor, Listener};
 use std::os;
 
 mod bind;
+mod echo;
 
 fn print_usage(program: &str, opts: &[OptGroup]) {
     println!("Usage: {} [options]", program);
@@ -34,11 +35,10 @@ fn main() {
 
     let mut acceptor = try_bind("127.0.0.1", port).unwrap().listen();
     for stream in acceptor.incoming() {
-        let mut in_stream = stream.unwrap();
-        let mut out_stream = in_stream.clone();
-        let msg = in_stream.read_to_end().unwrap();
-        print!("{}", str::from_utf8(msg.as_slice()).unwrap());
-        out_stream.write(msg.as_slice()).unwrap();
+        let in_stream = stream.unwrap();
+        spawn(proc() {
+            echo(in_stream).unwrap();
+        })
     }
 }
 
