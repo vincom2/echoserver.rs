@@ -11,7 +11,7 @@ mod echo;
 
 fn print_usage(program: &str, opts: &[OptGroup]) {
     println!("Usage: {} [options]", program);
-    for &o in opts.iter() {
+    for o in opts.iter() {
         //should print to string first in case option has no name?
         println!("-{} --{}\t{}", o.short_name, o.long_name, o.desc);
     }
